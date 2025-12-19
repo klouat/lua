@@ -42,7 +42,7 @@ local excludedStyles = {
     ["Teleporter"] = true
 }
 
--- Update character vars on respawn
+-- Update character vars on respawn --
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = newChar:WaitForChild("Humanoid")
