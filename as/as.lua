@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local VirtualInputManager = game:GetService("VirtualInputManager") 
+local UserInputService = game:GetService("UserInputService") -- Added for Inf Jump
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -64,7 +65,7 @@ local Window = Fluent:CreateWindow({
 local Tabs = {
     Info = Window:AddTab({ Title = "Info", Icon = "info" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
-    Utility = Window:AddTab({ Title = "Utility", Icon = "wrench" }), -- [NEW TAB]
+    Utility = Window:AddTab({ Title = "Utility", Icon = "wrench" }), 
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
@@ -72,7 +73,6 @@ local Tabs = {
 local Options = Fluent.Options
 
 -- Info Tab --
-
 local InfoPlayerSection = Tabs.Info:AddSection("Player Stats")
 local PlayerParagraph = InfoPlayerSection:AddParagraph({ Title = "Player Details", Content = "Loading..." })
 
@@ -223,6 +223,90 @@ UtilityGeneral:AddButton({
         end)
     end
 })
+
+-- [NEW] Player Movement Section --
+local UtilityPlayer = Tabs.Utility:AddSection("Player Movement")
+
+-- Variables for movement
+local wsEnabled = false
+local wsValue = 16
+local jpEnabled = false
+local jpValue = 50
+local infJumpEnabled = false
+
+-- Movement Loop (Forces speed/jump)
+task.spawn(function()
+    while true do
+        task.wait()
+        if humanoid then
+            if wsEnabled then
+                humanoid.WalkSpeed = wsValue
+            end
+            if jpEnabled then
+                humanoid.UseJumpPower = true
+                humanoid.JumpPower = jpValue
+            end
+        end
+    end
+end)
+
+-- Infinite Jump Logic
+UserInputService.JumpRequest:Connect(function()
+    if infJumpEnabled and humanoid then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+UtilityPlayer:AddToggle("InfiniteJump", {
+    Title = "Infinite Jump",
+    Default = false,
+    Callback = function(v)
+        infJumpEnabled = v
+    end
+})
+
+UtilityPlayer:AddToggle("WalkSpeedToggle", {
+    Title = "Enable WalkSpeed",
+    Default = false,
+    Callback = function(v)
+        wsEnabled = v
+        if not v and humanoid then humanoid.WalkSpeed = 16 end
+    end
+})
+
+UtilityPlayer:AddSlider("WalkSpeedSlider", {
+    Title = "WalkSpeed Amount",
+    Description = "Adjust your speed",
+    Default = 16,
+    Min = 16,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(v)
+        wsValue = v
+    end
+})
+
+UtilityPlayer:AddToggle("JumpPowerToggle", {
+    Title = "Enable JumpPower",
+    Default = false,
+    Callback = function(v)
+        jpEnabled = v
+        if not v and humanoid then humanoid.JumpPower = 50 end
+    end
+})
+
+UtilityPlayer:AddSlider("JumpPowerSlider", {
+    Title = "JumpPower Amount",
+    Description = "Adjust your jump height",
+    Default = 50,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(v)
+        jpValue = v
+    end
+})
+
 
 local UtilityAFK = Tabs.Utility:AddSection("AFK")
 
