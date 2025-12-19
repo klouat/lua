@@ -426,7 +426,7 @@ DungeonTeleSection:AddButton({
 Window:SelectTab(1)
 Fluent:Notify({
     Title = "Loaded",
-    Content = "Vergil Farm Script Loaded Successfully",
+    Content = "Script Loaded Successfully",
     Duration = 5
 })
 
