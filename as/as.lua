@@ -2,7 +2,7 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
--- Services
+-- Services --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,7 +16,7 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local backpack = player:WaitForChild("Backpack")
 local playerGui = player:WaitForChild("PlayerGui")
 local playerStats = player:WaitForChild("Data")
-local playerCodes = player:WaitForChild("Codes") -- Code Folder
+local playerCodes = player:WaitForChild("Codes") 
 
 local ServerHandler = ReplicatedStorage:WaitForChild("Game")
     :WaitForChild("Remotes")
@@ -25,7 +25,7 @@ local CodesRemote = ReplicatedStorage:WaitForChild("Game")
     :WaitForChild("Remotes")
     :WaitForChild("Codes")
 
--- Farm Variables
+-- Farm Variables --
 local autoFarmEnabled = false
 local autoDungeonEnabled = false
 local autoAwakenEnabled = false
@@ -50,7 +50,7 @@ player.CharacterAdded:Connect(function(newChar)
     playerGui = player:WaitForChild("PlayerGui")
 end)
 
--- Window Setup
+-- Window Setup --
 local Window = Fluent:CreateWindow({
     Title = "Anime Spirits",
     SubTitle = "Luceeal",
@@ -71,9 +71,7 @@ local Tabs = {
 
 local Options = Fluent.Options
 
--- ==========================================
--- [[ INFO TAB LOGIC ]]
--- ==========================================
+-- Info Tab --
 
 local InfoPlayerSection = Tabs.Info:AddSection("Player Stats")
 local PlayerParagraph = InfoPlayerSection:AddParagraph({ Title = "Player Details", Content = "Loading..." })
@@ -122,7 +120,7 @@ task.spawn(function()
     end
 end)
 
--- Anti AFK
+-- Anti AFK --
 local antiAfkEnabled = false
 local antiAfkThread
 local ANTI_AFK_INTERVAL = 180 
@@ -145,7 +143,7 @@ local function stopAntiAfk()
     antiAfkThread = nil
 end
 
--- Targeting
+-- Targeting --
 local function getClosestTarget()
     local folders = {
         workspace:FindFirstChild("NPC's"),
@@ -194,11 +192,7 @@ local function stopAllSkills()
     end
 end
 
--- ==========================================
--- [[ UI CONSTRUCTION ]]
--- ==========================================
-
--- [[ UTILITY TAB (NEW) ]]
+-- Ultility Tab --
 local UtilityGeneral = Tabs.Utility:AddSection("General")
 
 UtilityGeneral:AddButton({
@@ -242,7 +236,7 @@ UtilityAFK:AddToggle("AntiAFK", {
     end
 })
 
--- [[ COMBAT TAB ]]
+-- Combat Tab --
 local DungeonSection = Tabs.Combat:AddSection("Dungeon Mode")
 
 DungeonSection:AddToggle("AutoDungeon", {
@@ -272,7 +266,7 @@ CombatUtilitySection:AddToggle("AutoAwaken", {
     end
 })
 
--- Single Button for Buff & Shadow
+-- Auto Buff --
 CombatUtilitySection:AddButton({
     Title = "Cast Buffs & Shadows",
     Description = "Use V Skill of Souk, Weapons, And Fighting Style Then Use Specs",
@@ -338,7 +332,7 @@ CombatUtilitySection:AddButton({
 local TargetSection = Tabs.Combat:AddSection("Targeting")
 
 local TargetDropdown = TargetSection:AddDropdown("SelectedNPCs", {
-    Title = "Auto Selection",
+    Title = "Monsters",
     Values = {},
     Multi = true,
     Default = {},
@@ -351,7 +345,7 @@ local TargetDropdown = TargetSection:AddDropdown("SelectedNPCs", {
 })
 
 TargetSection:AddButton({
-    Title = "Refresh Target List",
+    Title = "Refresh Monsters List",
     Callback = function()
         local list = {}
         local seen = {}
@@ -463,7 +457,7 @@ local FarmToggle = FarmSection:AddToggle("AutoFarm", {
 })
 
 
--- [[ TELEPORT TAB ]]
+-- Teleport Tab --
 local IslandSection = Tabs.Teleport:AddSection("Islands")
 local spawnPointsFolder = workspace:WaitForChild("SpawnPoints", 10)
 local selectedIsland = nil
@@ -572,7 +566,7 @@ DungeonTeleSection:AddButton({
     end
 })
 
--- Finalization
+-- Finalization --
 Window:SelectTab(1)
 Fluent:Notify({
     Title = "Loaded",
