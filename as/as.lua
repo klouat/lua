@@ -7,16 +7,23 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
+local VirtualInputManager = game:GetService("VirtualInputManager") 
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local backpack = player:WaitForChild("Backpack")
+local playerGui = player:WaitForChild("PlayerGui")
+local playerStats = player:WaitForChild("Data")
+local playerCodes = player:WaitForChild("Codes") -- Code Folder
 
 local ServerHandler = ReplicatedStorage:WaitForChild("Game")
     :WaitForChild("Remotes")
     :WaitForChild("ServerHandler")
+local CodesRemote = ReplicatedStorage:WaitForChild("Game")
+    :WaitForChild("Remotes")
+    :WaitForChild("Codes")
 
 -- Farm Variables
 local autoFarmEnabled = false
@@ -40,6 +47,7 @@ player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = newChar:WaitForChild("Humanoid")
     humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
+    playerGui = player:WaitForChild("PlayerGui")
 end)
 
 -- Window Setup
@@ -54,14 +62,65 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
+    Info = Window:AddTab({ Title = "Info", Icon = "info" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
+    Utility = Window:AddTab({ Title = "Utility", Icon = "wrench" }), -- [NEW TAB]
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
 local Options = Fluent.Options
 
--- Logic Functions
+-- ==========================================
+-- [[ INFO TAB LOGIC ]]
+-- ==========================================
+
+local InfoPlayerSection = Tabs.Info:AddSection("Player Stats")
+local PlayerParagraph = InfoPlayerSection:AddParagraph({ Title = "Player Details", Content = "Loading..." })
+
+local InfoStatSection = Tabs.Info:AddSection("Combat Stats (Base + Boost)")
+local StatParagraph = InfoStatSection:AddParagraph({ Title = "Attributes", Content = "Loading..." })
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if playerStats then
+            pcall(function()
+                local lvl = playerStats.Level.Value
+                local perk = playerStats.Perk.Value
+                local soul = playerStats.CurrentSoul.Value
+                local spec = playerStats.CurrentSpec.Value
+                local sword = playerStats.SwordEquipped.Value
+
+                PlayerParagraph:SetDesc(
+                    "Level: " .. tostring(lvl) .. "\n" ..
+                    "Perk: " .. tostring(perk) .. "\n" ..
+                    "Soul: " .. tostring(soul) .. "\n" ..
+                    "Spec: " .. tostring(spec) .. "\n" ..
+                    "Sword: " .. tostring(sword)
+                )
+
+                local str = playerStats.Strength.Value
+                local strBoost = playerStats.StrengthBoost.Value
+                local def = playerStats.Defense.Value
+                local defBoost = playerStats.DefenseBoost.Value
+                local soulStat = playerStats.Soul.Value
+                local soulBoost = playerStats.SoulBoost.Value
+                local swdStat = playerStats.Sword.Value
+                local swdBoost = playerStats.SwordBoost.Value
+                local stam = playerStats.Stamina.Value
+
+                StatParagraph:SetDesc(
+                    "Strength: " .. str .. " + " .. strBoost .. "\n" ..
+                    "Defense: " .. def .. " + " .. defBoost .. "\n" ..
+                    "Soul: " .. soulStat .. " + " .. soulBoost .. "\n" ..
+                    "Sword: " .. swdStat .. " + " .. swdBoost .. "\n" ..
+                    "Stamina: " .. stam
+                )
+            end)
+        end
+    end
+end)
 
 -- Anti AFK
 local antiAfkEnabled = false
@@ -135,7 +194,53 @@ local function stopAllSkills()
     end
 end
 
--- UI Construction
+-- ==========================================
+-- [[ UI CONSTRUCTION ]]
+-- ==========================================
+
+-- [[ UTILITY TAB (NEW) ]]
+local UtilityGeneral = Tabs.Utility:AddSection("General")
+
+UtilityGeneral:AddButton({
+    Title = "Redeem All Codes",
+    Description = "Scans player data for codes and redeems them",
+    Callback = function()
+        task.spawn(function()
+            if playerCodes then
+                local children = playerCodes:GetChildren()
+                if #children == 0 then
+                     Fluent:Notify({Title="Codes", Content="No codes found to redeem.", Duration=3})
+                     return
+                end
+                
+                Fluent:Notify({Title="Codes", Content="Redeeming " .. #children .. " codes...", Duration=3})
+                
+                for _, codeObj in pairs(children) do
+                    local codeName = codeObj.Name
+                    -- Fire remote
+                    CodesRemote:InvokeServer(codeName)
+                    task.wait(0.1) -- Small delay to prevent spam kick
+                end
+                
+                Fluent:Notify({Title="Codes", Content="All codes processed!", Duration=3})
+            else
+                Fluent:Notify({Title="Error", Content="Codes folder not found.", Duration=3})
+            end
+        end)
+    end
+})
+
+local UtilityAFK = Tabs.Utility:AddSection("AFK")
+
+UtilityAFK:AddToggle("AntiAFK", {
+    Title = "Anti AFK",
+    Description = "Prevents idle kick",
+    Default = false,
+    Callback = function(v)
+        antiAfkEnabled = v
+        if v then startAntiAfk() else stopAntiAfk() end
+    end
+})
 
 -- [[ COMBAT TAB ]]
 local DungeonSection = Tabs.Combat:AddSection("Dungeon Mode")
@@ -148,11 +253,11 @@ DungeonSection:AddToggle("AutoDungeon", {
     end
 })
 
-local UtilitySection = Tabs.Combat:AddSection("Utility")
+local CombatUtilitySection = Tabs.Combat:AddSection("Combat Tools")
 
-UtilitySection:AddToggle("AutoAwaken", {
+CombatUtilitySection:AddToggle("AutoAwaken", {
     Title = "Auto Awaken",
-    Description = "Spams awaken remote every 2s",
+    Description = "Spams awaken",
     Default = false,
     Callback = function(v)
         autoAwakenEnabled = v
@@ -167,13 +272,66 @@ UtilitySection:AddToggle("AutoAwaken", {
     end
 })
 
-UtilitySection:AddToggle("AntiAFK", {
-    Title = "Anti AFK",
-    Description = "Prevents idle kick",
-    Default = false,
-    Callback = function(v)
-        antiAfkEnabled = v
-        if v then startAntiAfk() else stopAntiAfk() end
+-- Single Button for Buff & Shadow
+CombatUtilitySection:AddButton({
+    Title = "Cast Buffs & Shadows",
+    Description = "Use V Skill of Souk, Weapons, And Fighting Style Then Use Specs",
+    Callback = function()
+        task.spawn(function()
+            Fluent:Notify({Title="Status", Content="Starting Buff Sequence...", Duration=3})
+            
+            -- 1. Trigger Shadow (Once)
+            local args = { true }
+            local r1 = ReplicatedStorage:FindFirstChild("CommandUnspawnUnits")
+            if r1 then r1:FireServer(unpack(args)) end
+            task.wait(0.2)
+            local r2 = ReplicatedStorage:FindFirstChild("CommandAttack")
+            if r2 then r2:FireServer(unpack(args)) end
+
+            -- 2. Cycle Weapons (Once)
+            local myTools = {}
+            for _, t in pairs(backpack:GetChildren()) do table.insert(myTools, t) end
+            for _, t in pairs(character:GetChildren()) do if t:IsA("Tool") then table.insert(myTools, t) end end
+            
+            for _, tool in pairs(myTools) do
+                if tool:IsA("Tool") and not excludedStyles[tool.Name] then
+                    
+                    humanoid:EquipTool(tool)
+                    task.wait(0.8) 
+                    
+                    local targetPos = humanoidRootPart.Position + humanoidRootPart.CFrame.LookVector * 10
+                    local lookCF = CFrame.lookAt(humanoidRootPart.Position, targetPos)
+
+                    ServerHandler:FireServer("SkillsControl", tool.Name, "V", "Hold")
+                    ServerHandler:FireServer("SkillsControl", tool.Name, "V", "Release", nil, lookCF)
+
+                    local specName = nil
+                    local slots = playerGui:FindFirstChild("HUD") and playerGui.HUD:FindFirstChild("SpecialSkills") and playerGui.HUD.SpecialSkills:FindFirstChild("Slots")
+                    
+                    if slots then
+                        for _, frame in pairs(slots:GetChildren()) do
+                            if frame:IsA("Frame") and frame.Name ~= "UIGridLayout" then 
+                                specName = frame.Name
+                                break 
+                            end
+                        end
+                    end
+
+                    if specName then
+                        local specArgs = { "Specs", specName, targetPos }
+                        ServerHandler:FireServer(unpack(specArgs))
+                    end
+                    
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.V, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.V, false, game)
+
+                    task.wait(5) 
+                end
+            end
+            
+            Fluent:Notify({Title="Status", Content="Buff Sequence Complete!", Duration=5})
+        end)
     end
 })
 
@@ -185,7 +343,6 @@ local TargetDropdown = TargetSection:AddDropdown("SelectedNPCs", {
     Multi = true,
     Default = {},
     Callback = function(v)
-        -- Convert Fluent's map { ["Name"] = true } back to array for logic
         selectedNPCs = {}
         for name, selected in pairs(v) do
             if selected then table.insert(selectedNPCs, name) end
@@ -259,20 +416,14 @@ local FarmToggle = FarmSection:AddToggle("AutoFarm", {
             end
 
             if #currentStyles == 0 then
-                Fluent:Notify({
-                    Title = "Error",
-                    Content = "No valid styles found!",
-                    Duration = 5
-                })
+                Fluent:Notify({ Title = "Error", Content = "No valid styles found!", Duration = 5 })
                 Options.AutoFarm:SetValue(false)
                 return
             end
 
-            -- Instant Equip First Tool
             local firstTool = backpack:FindFirstChild(currentStyles[1])
             if firstTool then humanoid:EquipTool(firstTool) end
 
-            -- Start Heartbeat Logic
             connections.farm = RunService.Heartbeat:Connect(function()
                 if not autoFarmEnabled then return end
                 local target = getClosestTarget()
@@ -294,7 +445,6 @@ local FarmToggle = FarmSection:AddToggle("AutoFarm", {
                 end
             end)
 
-            -- Start Cycle Logic
             task.spawn(function()
                 while autoFarmEnabled do
                     task.wait(cycleTime)
@@ -430,7 +580,6 @@ Fluent:Notify({
     Duration = 5
 })
 
--- SaveManager / InterfaceManager
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 SaveManager:IgnoreThemeSettings()
